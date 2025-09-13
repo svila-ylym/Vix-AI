@@ -1,0 +1,11 @@
+flask>=2.3.0              # 提供 Web API 服务
+chromadb>=0.4.0           # 更强的向量数据库支持
+transformers>=4.30.0      # 本地模型支持
+accelerate>=0.20.0        # GPU 加速
+requests
+python-dotenv
+toml
+colorama
+sentence-transformers
+numpy
+tqdm

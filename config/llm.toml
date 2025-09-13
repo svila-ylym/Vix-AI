@@ -1,0 +1,58 @@
+[vt.config]
+version = 4
+
+[llm.chat]
+name = "主要对话模型"
+model = "Qwen/Qwen3-14B"
+max_token = 1024
+enable_thinking = false
+temp = 0.7
+provider = "siliconflow"  # 可选：openai, anthropic, azure, local
+
+[llm.review]
+name = "Qwen3-8b"
+model = "qwen/Qwen3-8b"
+max_token = 512
+enable_thinking = true
+temp = 0.7
+provider = "siliconflow"
+
+[llm.schedule]
+name = "日程"
+model = "internlm/internlm2_5-7b-chat"
+max_token = 512
+temp = 0.7
+provider = "siliconflow"
+
+[llm.vl]
+name = "视觉模型"
+model = "THUDM/GLM-4.1V-9B-Thinking"
+max_token = 512
+temp = 0.7
+provider = "siliconflow"
+
+[llm.felling]
+name = "情绪模型"
+model = "Qwen/Qwen3-8B"
+max_token = 512
+enable_thinking = false
+temp = 0.7
+provider = "siliconflow"
+
+[llm.cut]
+name = "分割模型"
+model = "Qwen/Qwen3-8B"
+max_token = 2048
+enable_thinking = false
+temp = 0.7
+provider = "siliconflow"
+
+[lpmm.embedmodel]
+provider = "siliconflow"
+model = "BAAI/bge-m3"
+name = "嵌入模型"
+
+[lpmm.settings]
+load_on_start = true
+show_progress = true
+load_expressions_on_start = true

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VixAI 聊天界面</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #chat-container {
+            width: 90%;
+            max-width: 800px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        #chat-messages {
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #aab7cf #f0f0f0;
+        }
+        #chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+        #chat-messages::-webkit-scrollbar-thumb {
+            background-color: #aab7cf;
+            border-radius: 5px;
+        }
+        #chat-messages::-webkit-scrollbar-track {
+            background-color: #f0f0f0;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #e2f0ff;
+            color: #333;
+            text-align: right;
+            align-self: flex-end;
+        }
+        .ai-message {
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: left;
+            align-self: flex-start;
+        }
+        .message-content {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        #input-area {
+            padding: 10px;
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 25px;
+            background-color: #f0f0f0;
+            margin-right: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+        #send-button {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        #send-button:hover {
+            background-color: #449d44;
+        }
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+        }
+        .user-message-container {
+            align-items: flex-end;
+        }
+        /* 加载动画样式 */
+        .loading-indicator {
+            text-align: left;
+            font-size: 16px;
+            color: #888;
+        }
+        .loading-indicator::after {
+            content: "...";
+            animation: dots 1s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% {
+                content: "";
+            }
+            40% {
+                content: ".";
+            }
+            60% {
+                content: "..";
+            }
+            80%, 100% {
+                content: "...";
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-messages">
+            <!-- 聊天消息显示区域 -->
+        </div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="输入你的消息...">
+            <button id="send-button">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const messageText = userInput.value.trim();
+            if (!messageText) return;
+
+            // 显示用户消息
+            displayMessage(messageText, 'user');
+            userInput.value = '';
+
+            // 创建加载指示器
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.classList.add('ai-message', 'message', 'loading-indicator');
+            loadingIndicator.textContent = 'AI思考中';
+            chatMessages.appendChild(loadingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 发送消息到后端
+            fetch('/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'sk-jwuhnobgkwkppjpnnrjvzutqhkwcjshfbaiehsjaoetcbzkh'  // 替换为你的API密钥
+                },
+                body: JSON.stringify({
+                    "messages": [{"role": "user", "content": messageText}],
+                    "conversation_id": "webui"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 移除加载指示器
+                chatMessages.removeChild(loadingIndicator);
+
+                if (data.choices && data.choices.length > 0) {
+                    const aiResponse = data.choices[0].message.content;
+                    // 解析分段消息
+                    const segments = aiResponse.split('---------------');
+                    segments.forEach(segment => {
+                        const trimmedSegment = segment.trim();
+                        if (trimmedSegment) {
+                            displayMessage(trimmedSegment, 'ai');
+                        }
+                    });
+                } else {
+                    displayMessage('AI 响应出错', 'ai');
+                }
+            })
+            .catch(error => {
+                // 移除加载指示器
+                chatMessages.removeChild(loadingIndicator);
+                console.error('Error:', error);
+                displayMessage('服务器繁忙，请稍后再试', 'ai');
+            });
+        }
+
+        function displayMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(`${sender}-message`);
+            
+            // 创建包含消息内容的容器
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('message-content');
+            messageContent.textContent = message;
+            
+            // 将消息内容添加到消息 div 中
+            messageDiv.appendChild(messageContent);
+
+            // 创建消息容器，用于 flex 布局
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('message-container');
+            if (sender === 'user') {
+                messageContainer.classList.add('user-message-container');
+            }
+            messageContainer.appendChild(messageDiv);
+
+            chatMessages.appendChild(messageContainer);
+
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+    <script src="/static/js/index.js"></script>
+</body>
+</html>
